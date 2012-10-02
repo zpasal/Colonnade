@@ -1,6 +1,6 @@
-package org.collonade.serializer;
+package org.colonnade.serializer;
 
-public interface CollonadeSerializer {
+public interface ColonnadeSerializer {
 	byte[] serialize(Object object);
 	Object deserialize(Class<?> klass, byte[] data);
 }

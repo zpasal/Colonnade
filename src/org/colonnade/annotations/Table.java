@@ -1,8 +1,12 @@
-package org.collonade.annotations;
+package org.colonnade.annotations;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Id {
+public
+@interface Table {
+	String name();
 }
+

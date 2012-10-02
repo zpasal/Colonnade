@@ -1,15 +1,15 @@
-package org.collonade.mapper;
+package org.colonnade.mapper;
 
 import java.lang.reflect.Field;
 
-import org.collonade.serializer.CollonadeSerializer;
+import org.colonnade.serializer.ColonnadeSerializer;
 
-public class CollonadeColumnEntry {
+public class ColonnadeColumnEntry {
 	private String family;
-	private CollonadeSerializer serializer;
+	private ColonnadeSerializer serializer;
 	private Field field;
 	
-	public CollonadeColumnEntry(String family, CollonadeSerializer serializer, Field field) {
+	public ColonnadeColumnEntry(String family, ColonnadeSerializer serializer, Field field) {
 		super();
 		this.family = family;
 		this.serializer = serializer;
@@ -21,10 +21,10 @@ public class CollonadeColumnEntry {
 	public void setFamily(String family) {
 		this.family = family;
 	}
-	public CollonadeSerializer getSerializer() {
+	public ColonnadeSerializer getSerializer() {
 		return serializer;
 	}
-	public void setSerializer(CollonadeSerializer serializer) {
+	public void setSerializer(ColonnadeSerializer serializer) {
 		this.serializer = serializer;
 	}
 	public Field getField() {

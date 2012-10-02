@@ -1,4 +1,4 @@
-package org.collonade.examples.model;
+package org.colonnade.examples.model;
 
 public class Address {
 	private String address;

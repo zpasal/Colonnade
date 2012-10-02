@@ -1,9 +1,9 @@
-package org.collonade.serializer;
+package org.colonnade.serializer;
 
 
 import flexjson.JSONDeserializer;
 
-public class JSONSerializer implements CollonadeSerializer {
+public class JSONSerializer implements ColonnadeSerializer {
 
 	@Override
 	public byte[] serialize(Object object) {

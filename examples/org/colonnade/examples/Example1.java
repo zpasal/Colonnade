@@ -1,12 +1,12 @@
-package org.collonade.examples;
+package org.colonnade.examples;
 
 import java.util.ArrayList;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.collonade.examples.model.Address;
-import org.collonade.examples.model.User;
-import org.collonade.mapper.CollonadeDAO;
+import org.colonnade.examples.model.Address;
+import org.colonnade.examples.model.User;
+import org.colonnade.mapper.ColonnadeDAO;
 
 /*
  * Simple example of mapping few columns from table to User POJO
@@ -17,7 +17,7 @@ public class Example1 {
 	public static void main(String[] args) throws Exception {
 		Configuration conf = HBaseConfiguration.create();
 		
-		CollonadeDAO<User> dao = new CollonadeDAO<User>(conf, User.class);
+		ColonnadeDAO<User> dao = new ColonnadeDAO<User>(conf, User.class);
 		
 		// Create POJO
 		User user1 = new User();

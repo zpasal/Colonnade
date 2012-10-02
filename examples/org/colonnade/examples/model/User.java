@@ -1,11 +1,11 @@
-package org.collonade.examples.model;
+package org.colonnade.examples.model;
 
 import java.util.ArrayList;
 
-import org.collonade.annotations.Column;
-import org.collonade.annotations.Id;
-import org.collonade.annotations.Table;
-import org.collonade.serializer.JSONSerializer;
+import org.colonnade.annotations.Column;
+import org.colonnade.annotations.Id;
+import org.colonnade.annotations.Table;
+import org.colonnade.serializer.JSONSerializer;
 
 // We are mappint to table "user"
 @Table(name="user")
