@@ -17,9 +17,7 @@ Note : If you are working with eclipse I usually just add all jars from /hadoop,
 Simple mapping
 ==============
 
-Using simple mapping is straight forward using CollonadeDAO class. 
-
-Firstly we need POJO class which will be mapped to table, r.g. User:
+Firstly we need POJO class which will be mapped to table, e.g. User:
 
 ```
 @Table(name="user")
@@ -57,3 +55,109 @@ To map POJO Colonnade uses annotations
 - @Column - mark field to be persistent
 - @Table - link POJO with table named "user"
 
+Saving
+======
+
+```
+Configuration conf = HBaseConfiguration.create();
+		
+ColonnadeDAO<User> userDAO = new ColonnadeDAO<User>(conf, User.class);
+		
+// Create POJO
+User user = new User();
+user.setId("00000");
+user.setEmail("pasalic.zaharije@gmail.com");
+		
+// Save POJO
+dao.save(user);
+```
+
+Reading
+=======
+
+```
+Configuration conf = HBaseConfiguration.create();
+		
+ColonnadeDAO<User> userDAO = new ColonnadeDAO<User>(conf, User.class);
+
+User user = dao.read("00000".getBytes());
+System.out.println(user2.getEmail());
+		
+```
+
+
+Serializers
+===========
+
+By default all simple types can be serialized without any problems. But sometimes it's good to serialize complex structure. This can be
+easily achieved using serializers. Currently Colonnade implements only JSONSerializer but it's easy to extend any format that you want to use.
+
+Let assume that we want to add list of addresses  to be serialized as JSON inside User object:
+
+```
+public class Address {
+	private String address;
+	private String city;
+	private String postalCode;
+
+	public Address() {
+	}
+	public Address(String address, String city, String postalCode) {
+		this.address = address;
+		this.city = city;
+		this.postalCode = postalCode;
+	}
+	public String getAddress() {
+		return address;
+	}
+	public void setAddress(String address) {
+		this.address = address;
+	}
+	public String getCity() {
+		return city;
+	}
+	public void setCity(String city) {
+		this.city = city;
+	}
+	public String getPostalCode() {
+		return postalCode;
+	}
+	public void setPostalCode(String postalCode) {
+		this.postalCode = postalCode;
+	}
+}
+
+
+
+@Table(name="user")
+public class User  {
+	
+	// This is used for ID
+	@Id private String id;
+	@Column(family="data") private String email;
+	@Column(family="data", serializer=JSONSerializer.class) private ArrayList<Address> addresses;
+	
+	public User() {	
+	}
+	public String getId() {
+		return id;
+	}
+	public void setId(String id) {
+		this.id = id;
+	}
+	public String getEmail() {
+		return email;
+	}
+	public void setEmail(String email) {
+		this.email = email;
+	}
+	public ArrayList<Address> getAddresses() {
+		return addresses;
+	}
+	public void setAddresses(ArrayList<Address> addresses) {
+		this.addresses = addresses;
+	}
+	
+}
+
+```
