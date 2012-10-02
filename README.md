@@ -81,9 +81,22 @@ Configuration conf = HBaseConfiguration.create();
 ColonnadeDAO<User> userDAO = new ColonnadeDAO<User>(conf, User.class);
 
 User user = dao.read("00000".getBytes());
-System.out.println(user2.getEmail());
+System.out.println(user.getEmail());
 		
 ```
+
+Column Families
+===============
+
+Each getter/setter must belong to one column family. Using "Column" annotation you can manage multiple column families:
+
+
+```
+	@Column(family="data") private String email;
+	@Column(family="secure") private String passwordHash;
+```
+
+This will map "data:email" to email and "secure:passwordHash" to passwordHash.
 
 
 Serializers
@@ -161,3 +174,16 @@ public class User  {
 }
 
 ```
+
+
+With this 'addresses' will be saved as JSON.
+
+You can easily extend any serializer, jsut need to implement ColonnadeSerializer interface
+
+```
+public interface ColonnadeSerializer {
+	byte[] serialize(Object object);
+	Object deserialize(Class<?> klass, byte[] data);
+}
+```
+
