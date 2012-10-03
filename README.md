@@ -3,12 +3,18 @@ Colonnade
 
 Colonnade is simple Java ORM implementation for HBase based on DAO pattern using Java annotations for mapping directives.
 
+NOTE
+====
+
+Todays build (October 3) is a little different than in documentation. For more info see /test folder 
+
 Dependencies
 ============
 
 Colonnade is dependent on:
 
-- flexJSON library (distributed in /lib folder) http://flexjson.sourceforge.net/
+- gson library (distributed in /lib folder) http://code.google.com/p/google-gson/
+- junit 4.10 (distributed in /lib folder)
 - hadoop jars
 - hbase jars
 
