@@ -3,18 +3,22 @@ package org.colonnade.mapper;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
-import org.colonnade.annotations.*;
+import org.colonnade.annotations.Column;
+import org.colonnade.annotations.Id;
+import org.colonnade.annotations.Table;
+import org.colonnade.annotations.Unmapped;
 import org.colonnade.serializer.ColonnadeSerializer;
 import org.colonnade.serializer.DefaultSerializer;
 
@@ -28,8 +32,8 @@ public class ColonnadeDAO<T> {
 	private String tableName;
 
 	private ColonnadeColumnEntry idField;
-	private ArrayList<ColonnadeColumnEntry> columns = new ArrayList<ColonnadeColumnEntry>();
-
+	private Field unmappedField;
+	private Hashtable<String, ColonnadeColumnEntry> columns = new Hashtable<String, ColonnadeColumnEntry>();
 	
 	public ColonnadeDAO(Configuration conf, Class<T> reference) throws IOException, InstantiationException, IllegalAccessException {
 		//this.conf = conf;
@@ -47,11 +51,14 @@ public class ColonnadeDAO<T> {
 			if (field.isAnnotationPresent(Column.class)) {
 				String family = field.getAnnotation(Column.class).family();
 				Class<? extends ColonnadeSerializer> serializerClass = field.getAnnotation(Column.class).serializer();
-				columns.add(new ColonnadeColumnEntry(family, serializerClass.newInstance(), field));
+				columns.put(field.getName(), new ColonnadeColumnEntry(family, serializerClass.newInstance(), field));
 			}
 			// or CollonadeId (this is used for rowkey qualifier)
 			else if (field.isAnnotationPresent(Id.class)) {
 				idField = new ColonnadeColumnEntry("", new DefaultSerializer(), field);
+			}
+			else if (field.isAnnotationPresent(Unmapped.class)) {
+				unmappedField = field;
 			}
 		}
 		
@@ -59,23 +66,36 @@ public class ColonnadeDAO<T> {
 	}
 	
 	
-	public void save(T modelObject) throws IOException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+	public void create(T modelObject) throws IOException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 
 		Put put = new Put(BeanUtils.getProperty(modelObject, idField.getField().getName()).getBytes());
 		
-		Iterator<ColonnadeColumnEntry> iter = columns.iterator();
+		Iterator<ColonnadeColumnEntry> iter = columns.values().iterator();
 		while(iter.hasNext()) {
 			ColonnadeColumnEntry columnEntry = iter.next();
-			
 			
 			ColonnadeSerializer serializer = columnEntry.getSerializer();
 			Object objectVal = PropertyUtils.getProperty(modelObject, columnEntry.getField().getName());
 			if (objectVal != null) {
 				byte[] value = serializer.serialize(objectVal);
-				
 				put.add(columnEntry.getFamily().getBytes(), columnEntry.getField().getName().getBytes(), value);
 			}
 		}
+		
+		// if unmappedField is present, add them to Put also
+		if (unmappedField != null) {
+			UnmappedColumns unmapped = (UnmappedColumns)PropertyUtils.getProperty(modelObject, unmappedField.getName());
+			
+			if (unmapped != null) {
+				Iterator<UnmappedColumn> unmappedIterator = unmapped.iterator();
+				while(unmappedIterator.hasNext()) {
+					UnmappedColumn unmappedColumn = unmappedIterator.next();
+					
+					put.add(unmappedColumn.getFamily(), unmappedColumn.getColumn(), unmappedColumn.getValue());
+				}
+			}
+		}
+		
 		
 		hTable.put(put);
 	}
@@ -91,18 +111,48 @@ public class ColonnadeDAO<T> {
 		
 		T modelObject = reference.newInstance();
 		
-		Iterator<ColonnadeColumnEntry> iter = columns.iterator();
-		while(iter.hasNext()) {
-			ColonnadeColumnEntry columnEntry = iter.next();
-
-			KeyValue kv = result.getColumnLatest(columnEntry.getFamily().getBytes(), columnEntry.getField().getName().getBytes());
-			if (kv != null) {
-				
-				ColonnadeSerializer serializer = columnEntry.getSerializer();
-				Object value = serializer.deserialize(columnEntry.getField().getType(), kv.getValue());
-				PropertyUtils.setProperty(modelObject, columnEntry.getField().getName(), value);
+		// write ID
+		BeanUtils.setProperty(modelObject, idField.getField().getName(), new String(id));		
+		
+		Iterator<Entry<byte[], NavigableMap<byte[], byte[]>>> familyIter = result.getNoVersionMap().entrySet().iterator();
+		
+		while(familyIter.hasNext()) {
+			Entry<byte[], NavigableMap<byte[], byte[]>> familyEntry = familyIter.next();
+			
+			byte[] family = familyEntry.getKey();
+			
+			Iterator<Entry<byte[], byte[]>> columnIter = familyEntry.getValue().entrySet().iterator();
+			
+			UnmappedColumns unmappedColumns = null;
+			
+			if (unmappedField != null) {
+				unmappedColumns = new UnmappedColumns();
 			}
-		}		
+			
+			while(columnIter.hasNext()) {
+				Entry<byte[], byte[]> columnEntry = columnIter.next();
+				
+				byte[] column = columnEntry.getKey();
+				byte[] value = columnEntry.getValue();
+				
+				ColonnadeColumnEntry colonadeEntry = columns.get(new String(column));
+				
+				if (colonadeEntry != null) {
+					ColonnadeSerializer serializer = colonadeEntry.getSerializer();
+					Object serializedValue = serializer.deserialize(colonadeEntry.getField().getType(), value);
+					PropertyUtils.setProperty(modelObject, colonadeEntry.getField().getName(), serializedValue);
+					
+				}
+				else if (unmappedField != null) {
+					unmappedColumns.add(family, column, value);
+				}
+			}
+			
+			if (unmappedField != null) {
+				PropertyUtils.setProperty(modelObject, unmappedField.getName(), unmappedColumns);
+			}
+			
+		}
 		
 		return modelObject;
 	}

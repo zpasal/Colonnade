@@ -1,19 +1,20 @@
 package org.colonnade.serializer;
 
 
-import flexjson.JSONDeserializer;
+import com.google.gson.Gson;
 
 public class JSONSerializer implements ColonnadeSerializer {
 
 	@Override
 	public byte[] serialize(Object object) {
-		return new flexjson.JSONSerializer().serialize(object).getBytes();
+		Gson gson = new Gson();
+		return gson.toJson(object).getBytes();
 	}
 
-	@SuppressWarnings("rawtypes")
 	@Override
 	public Object deserialize(Class<?> klass, byte[] data) {
-		return new JSONDeserializer().deserialize(new String(data), klass);	
+		Gson gson = new Gson();
+		return gson.fromJson(new String(data), klass);
 	}
 
 }
