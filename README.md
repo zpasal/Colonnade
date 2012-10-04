@@ -3,10 +3,6 @@ Colonnade
 
 Colonnade is simple Java ORM implementation for HBase based on DAO pattern using Java annotations for mapping directives.
 
-NOTE
-====
-
-Todays build (October 3) is a little different than in documentation. For more info see /test folder 
 
 Dependencies
 ============
@@ -23,7 +19,7 @@ Note : If you are working with eclipse I usually just add all jars from /hadoop,
 Simple mapping
 ==============
 
-Firstly we need POJO class which will be mapped to table, e.g. User:
+Firstly we need POJO class which will be mapped to table. POJO must have defined default constructor (Constructor without arguments):
 
 ```
 @Table(name="user")
@@ -75,7 +71,7 @@ user.setId("00000");
 user.setEmail("pasalic.zaharije@gmail.com");
 		
 // Save POJO
-dao.save(user);
+dao.create(user);
 ```
 
 Reading
@@ -192,6 +188,61 @@ public interface ColonnadeSerializer {
 	Object deserialize(Class<?> klass, byte[] data);
 }
 ```
+
+Dynamic schema
+==============
+
+Sometimes data model is too dynamic and you cannot map data directly to predefined fields. What collonade does is to collect all non-mapped values from hbase and put them in UnmappedColumns collection. 
+
+@Unmapped annotation is used to enable unmapped column read/write:
+
+UnmappedColumns is collection of UnmappedColumn class which is triplet (family, column, value).
+
+```
+@Table(name="model")
+class Model {
+	@id private String id;
+	@Column(family="data") private String firstname;
+	
+	@Unmapped private UnmappedColumns otherColumns;
+	
+	// generate getters and setters
+}
+
+Configuration conf = HBaseConfiguration.create();
+		
+ColonnadeDAO<Model> dao = new ColonnadeDAO<Model>(conf, Model.class);
+
+// Create dynamic columns
+UnmappedColumns otherColumns = new UnmappedColumns();
+otherColumns.add("data".getBytes(), "lastname".getBytes(), "pasalic");
+		
+// Create POJO
+Model model = new Model();
+user.setId("0");
+user.setFirstname("zaharije");
+user.setOtherColumns(otherColumns);
+
+dao.create(model);
+```
+  
+  
+Unmapped columns will nto be read if there is no annotation @Unmapped present.
+
+Changes
+=======
+
+0.4.1
+- Access to dynamic columns (unmapped columns)
+- Changed flexjson to gson
+- Added simple unit tests
+
+0.3.3
+- Added custom serializers
+- Added JSON serializer using flexjson lib
+
+0.1.2
+- Simple mapping with annotations
 
 License
 -------
